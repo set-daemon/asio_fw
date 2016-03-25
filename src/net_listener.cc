@@ -80,7 +80,7 @@ void NetListener::ev_read_proc(int lis_fd, short ev, void *arg) {
 
 //static const char *test_rsp = "HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Length: 0\r\nDate: Fri, 25 Mar 2016 09:12:29 GMT\r\nServer: nginx/1.8.0\r\n\r\n";
 static const char *rsp_body = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"></meta><title>测试</title></head><body></body></html>";
-static const char *test_rsp = "HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\n%s";
+static const char *test_rsp = "HTTP/1.1 200 OK\r\nConnection: keep-alive\r\nContent-Length: %d\r\n\r\n%s";
 
 void NetListener::ev_write_proc(int lis_fd, short ev, void *arg) {
 	NetListener* listener = (NetListener*)arg;

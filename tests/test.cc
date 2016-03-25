@@ -6,7 +6,7 @@
 #include "net_listener.h"
 
 int main(int argc, char *argv[]) {
-	XxbufQue que(1024, 10240);
+	XxbufQue que(1024, 102400);
 
 	if (!que.is_ok()) {
 		fprintf(stderr, "que创建有问题\n");
