@@ -41,17 +41,17 @@ void NetListener::ev_read_proc(int lis_fd, short ev, void *arg) {
 			//fprintf(stdout, "{EAGAIN=%d,EBADF=%d,EINTR=%d}errno = %d\n, errstr = %s\n", EAGAIN,EBADF,EINTR,errno, strerror(errno));
 			break;
 		}
-		fprintf(stdout, "read...\n");
+		//fprintf(stdout, "read...\n");
 		total_read += r_len;
 		to_read -= total_read;
 		p += r_len;
 	} while (r_len > 0 && to_read > 0);
 	if (r_len == -1 && (errno != EAGAIN)) {
-		fprintf(stdout, "读异常\n");
+		//fprintf(stdout, "读异常\n");
 		listener->del_sock_event(lis_fd);
 		return;
 	} else if (r_len == 0) {
-		fprintf(stdout, "断开\n");
+		//fprintf(stdout, "断开\n");
 		listener->del_sock_event(lis_fd);
 		return;
 	}
@@ -60,7 +60,7 @@ void NetListener::ev_read_proc(int lis_fd, short ev, void *arg) {
 		*(buf+total_read) = '\0';
 		data_blk->size = total_read;
 		data_que.add_data_block(data_blk);
-		fprintf(stdout, "read [%d], %p %p [%s]\n", data_blk->size, data_blk, buf, buf);
+		//fprintf(stdout, "read [%d], %p %p [%s]\n", data_blk->size, data_blk, buf, buf);
 		//fprintf(stdout, "111[");
 		for (int i = 0; i < total_read; ++i) {
 			//fprintf(stdout, "{%02x %c }", *(unsigned char*)(buf+i), (char)buf[i]);
@@ -72,7 +72,7 @@ void NetListener::ev_read_proc(int lis_fd, short ev, void *arg) {
 	SockEvent* sock_evs = listener->find_sock_event(lis_fd);
 	if (sock_evs->wr_ev == NULL) {
 		sock_evs->wr_ev = event_new(listener->ev_base, lis_fd, EV_WRITE|EV_ET, NetListener::ev_write_proc, arg);
-		fprintf(stdout, "设置写事件\n");
+		//fprintf(stdout, "设置写事件\n");
 	}
 	event_add(sock_evs->wr_ev, NULL);
 	//event_base_set(listener->ev_base, &session->ev);
@@ -81,18 +81,20 @@ void NetListener::ev_read_proc(int lis_fd, short ev, void *arg) {
 //static const char *test_rsp = "HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Length: 0\r\nDate: Fri, 25 Mar 2016 09:12:29 GMT\r\nServer: nginx/1.8.0\r\n\r\n";
 static const char *rsp_body = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"></meta><title>测试</title></head><body></body></html>";
 static const char *test_rsp = "HTTP/1.1 200 OK\r\nConnection: keep-alive\r\nContent-Length: %d\r\n\r\n%s";
+//static const char *test_rsp = "HTTP/1.1 200 OK\r\n\r\n%s";
 
 void NetListener::ev_write_proc(int lis_fd, short ev, void *arg) {
 	NetListener* listener = (NetListener*)arg;
 	char buf[1024];
 	int n = sprintf(buf, test_rsp, strlen(rsp_body), rsp_body);
+	buf[n] = '\0';
 	// 获取写数据
-	fprintf(stdout, "写数据\n");
 	int ret = write(lis_fd, buf, n);
 	if (ret == -1) {
-		fprintf(stdout, "写失败\n");
+		//fprintf(stdout, "写失败\n");
 		listener->del_sock_event(lis_fd);
 	}
+	//fprintf(stdout, "写数据%d,%dbytes{%s}\n", n, ret, buf);
 #if 0
 	// 不能设置读，否则会进入该事件会一直被触发
 	event_set(session->ev, lis_fd, EV_READ|EV_WRITE|EV_PERSIST, NetListener::ev_read_proc, arg);

@@ -83,6 +83,7 @@ private:
 		if (iter != sock_events.end()) {
 			sock_events.erase(iter);
 		}
+		close(fd);
 	}
 
 	SockEvent* find_sock_event(int fd) {

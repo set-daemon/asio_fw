@@ -10,6 +10,12 @@
 #ifndef __XXBUF_QUE_H__
 #define __XXBUF_QUE_H__
 
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+#include <semaphore.h>
+
 struct DataBlock {
 	int size; // 当要写数据时，表示能写的大小；当读数据时，表示有效数据的大小
 };
@@ -20,12 +26,14 @@ public:
 	XxbufQue(int _block_size, int _elem_num): block_size(_block_size),elem_num(_elem_num),
 		head(0),rear(0) {
 		status = create();	
+		sem_init(&notify_sem, 0, 0);
 	}
 
 	~XxbufQue() {
 		if (p != NULL) {
 			free(p);
 		}
+		sem_destroy(&notify_sem);
 	}
 
 	int is_ok() {
@@ -53,7 +61,10 @@ public:
 		}
 		rear = (rear + 1) % elem_num;
 
-		return 0;	
+		// 信号量
+		sem_post(&notify_sem);
+
+		return 0;
 	}
 
 	DataBlock* get_data_block() {
@@ -64,6 +75,14 @@ public:
 		DataBlock* block = (DataBlock*)(head*block_size+p);
 
 		return block;
+	}
+
+	DataBlock* wait() {
+		if (0 != sem_wait(&notify_sem)) {
+			return NULL;
+		}
+
+		return get_data_block();
 	}
 
 	/* 需要配合get_data_block使用，即将数据处理完后，将数据块放入队列中，变成可用内存块 */
@@ -100,6 +119,8 @@ private:
 	int block_size;
 	int elem_num;
 	char *p;
+
+	sem_t notify_sem;
 };
 
 #endif // __XXBUF_QUE_H__
