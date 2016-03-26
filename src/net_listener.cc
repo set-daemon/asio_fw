@@ -16,6 +16,10 @@ void NetListener::ev_accept_proc(int lis_fd, short ev, void *arg) {
 	SockEvent* sock_evs = listener->find_sock_event(cli_fd);
 	sock_evs->rd_ev = event_new(listener->ev_base, cli_fd, EV_READ|EV_PERSIST, NetListener::ev_read_proc, arg);
 	event_add(sock_evs->rd_ev, NULL);
+
+	// 填充ip信息
+	inet_ntop(AF_INET, &cli_addr.sin_addr, sock_evs->ip, sizeof(sock_evs->ip));
+	sock_evs->port = ntohs(cli_addr.sin_port);
 }
 
 void NetListener::ev_read_proc(int lis_fd, short ev, void *arg) {
@@ -27,14 +31,21 @@ void NetListener::ev_read_proc(int lis_fd, short ev, void *arg) {
 		fprintf(stdout, "data_que is full\n");
 		return;
 	}
+	SockEvent* sock_evs = listener->find_sock_event(lis_fd);
 
 	char* buf = DATABLK_ADDR(data_blk);
 	int to_read = data_blk->size-1;
 	int total_read = 0;
 
+	// 20160326 特别的，设置数据来源信息
+	DataSrc *ds = (DataSrc*)buf;
+	ds->fd = lis_fd;
+	memcpy(ds->ip, sock_evs->ip, sizeof(sock_evs->ip));
+	ds->port = sock_evs->port;
+
 	// 读取数据
 	int r_len = 0;
-	char *p = buf;
+	char *p = buf + sizeof(DataSrc);
 	do {
 		r_len = recv(lis_fd, p, to_read, MSG_DONTWAIT);
 		if (r_len <= 0) {
@@ -69,7 +80,6 @@ void NetListener::ev_read_proc(int lis_fd, short ev, void *arg) {
 		//fprintf(stdout, "]\n");
 	}
 
-	SockEvent* sock_evs = listener->find_sock_event(lis_fd);
 	if (sock_evs->wr_ev == NULL) {
 		sock_evs->wr_ev = event_new(listener->ev_base, lis_fd, EV_WRITE|EV_ET, NetListener::ev_write_proc, arg);
 		//fprintf(stdout, "设置写事件\n");

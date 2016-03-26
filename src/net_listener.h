@@ -2,6 +2,7 @@
  * file name: net_listener.h
  * author   : set_daemon@126.com
  * date     : 2016-01-22
+ * history  :
  */
 #ifndef __NET_LISTENER_H__
 #define __NET_LISTENER_H__
@@ -39,8 +40,10 @@ public:
 	}
 
 public:
-	struct event* rd_ev;
-	struct event* wr_ev;
+	char 			ip[16];
+	short			port;
+	struct event* 	rd_ev;
+	struct event* 	wr_ev;
 };
 
 class NetListener {

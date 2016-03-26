@@ -6,6 +6,7 @@
  * history  :
  *   20160325: 创建内存块的循环队列，以数组作为底层容器，xx表示从x到x，完成了一个循环；当前支持一对一的Producer/Consumer模型
  *             block_size是2的倍数
+ *   20160326: 增加异步框架相关的数据块定义：增加socket字段，占用4个字节
  */
 #ifndef __XXBUF_QUE_H__
 #define __XXBUF_QUE_H__
@@ -16,10 +17,7 @@
 
 #include <semaphore.h>
 
-struct DataBlock {
-	int size; // 当要写数据时，表示能写的大小；当读数据时，表示有效数据的大小
-};
-#define DATABLK_ADDR(p) ((char*)p+sizeof(DataBlock))
+#include "data_interface.h"
 
 class XxbufQue {
 public:
