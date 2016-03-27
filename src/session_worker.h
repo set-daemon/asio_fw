@@ -11,9 +11,15 @@
 #include <pthread.h>
 
 #include "xxbuf_que.h"
+#include "http_meta.h"
+#include "http_parser.h"
 
 #include <string>
+#include <map>
 using namespace std;
+
+typedef map<int,parser::HttpParseInfo* > SocketHttpParseInfo;
+typedef SocketHttpParseInfo::iterator SocketHttpParseInfoIter;
 
 class SessionWorker {
 public:
@@ -30,8 +36,9 @@ private:
 	static void* worker_cb(void* arg);
 
 private:
-	XxbufQue 	&data_que;
-	pthread_t 	worker_pthread;
+	XxbufQue 			&data_que;
+	pthread_t 			worker_pthread;
+	SocketHttpParseInfo socket_httpinfo;
 };
 
 #endif // __SESSION_WORKER_H__

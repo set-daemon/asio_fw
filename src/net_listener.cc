@@ -42,10 +42,11 @@ void NetListener::ev_read_proc(int lis_fd, short ev, void *arg) {
 	ds->fd = lis_fd;
 	memcpy(ds->ip, sock_evs->ip, sizeof(sock_evs->ip));
 	ds->port = sock_evs->port;
+	DataMsg *msg = (DataMsg*)(buf+sizeof(DataSrc));	
 
 	// 读取数据
 	int r_len = 0;
-	char *p = buf + sizeof(DataSrc);
+	char *p = buf + sizeof(DataSrc) + sizeof(DataMsg);
 	do {
 		r_len = recv(lis_fd, p, to_read, MSG_DONTWAIT);
 		if (r_len <= 0) {
@@ -60,14 +61,20 @@ void NetListener::ev_read_proc(int lis_fd, short ev, void *arg) {
 	if (r_len == -1 && (errno != EAGAIN)) {
 		//fprintf(stdout, "读异常\n");
 		listener->del_sock_event(lis_fd);
+		// 向session层发出删除lis_fd的消息
+		msg->op = CHANNEL_LEASE;
+		data_que.add_data_block(data_blk);
 		return;
 	} else if (r_len == 0) {
 		//fprintf(stdout, "断开\n");
 		listener->del_sock_event(lis_fd);
+		msg->op = CHANNEL_LEASE;
+		data_que.add_data_block(data_blk);
 		return;
 	}
 
 	if (total_read > 0) {
+		msg->op = UPLOAD_DATA;
 		*(buf+total_read) = '\0';
 		data_blk->size = total_read;
 		data_que.add_data_block(data_blk);
@@ -102,6 +109,26 @@ void NetListener::ev_write_proc(int lis_fd, short ev, void *arg) {
 	int ret = write(lis_fd, buf, n);
 	if (ret == -1) {
 		//fprintf(stdout, "写失败\n");
+		// 通知session层
+		XxbufQue& data_que = listener->data_que;
+		DataBlock *data_blk = data_que.get_free_block();	
+		if (NULL != data_blk) {
+			SockEvent* sock_evs = listener->find_sock_event(lis_fd);
+
+			char* buf = DATABLK_ADDR(data_blk);
+			int to_read = data_blk->size-1;
+			int total_read = 0;
+
+			// 20160326 特别的，设置数据来源信息
+			DataSrc *ds = (DataSrc*)buf;
+			ds->fd = lis_fd;
+			memcpy(ds->ip, sock_evs->ip, sizeof(sock_evs->ip));
+			ds->port = sock_evs->port;
+			DataMsg *msg = (DataMsg*)(buf+sizeof(DataSrc));
+			msg->op = CHANNEL_LEASE;
+			data_que.add_data_block(data_blk);
+		}
+	
 		listener->del_sock_event(lis_fd);
 	}
 	//fprintf(stdout, "写数据%d,%dbytes{%s}\n", n, ret, buf);

@@ -20,5 +20,13 @@ struct DataSrc {
 	short 	port;
 };
 
+// 定义数据消息
+typedef enum {
+	UPLOAD_DATA = 0x00,
+	CHANNEL_LEASE
+}DATA_OP;
+struct DataMsg {
+	DATA_OP op;
+};
 
 #endif // __DATA_INTERFACE_H__
