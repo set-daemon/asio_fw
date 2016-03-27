@@ -59,11 +59,12 @@ void* SessionWorker::worker_cb(void* arg) {
 		// 拷贝数据
 		memcpy((char*)parse_info->http_data.data, data, data_size);
 		parse_info->http_data.len += data_size;
+		// 释放数据块
+		worker->data_que.lease_data_block();
 
 		// ** http解析
 		int ret = parser::http_req_parse(*parse_info);
 		if (0 != ret) {
 		}
-		worker->data_que.lease_data_block();
 	}
 }

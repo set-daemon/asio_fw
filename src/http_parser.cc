@@ -86,13 +86,42 @@ static int _http_cmdline_stage(HttpParseInfo &info) {
 }
 
 static int _http_headers_stage(HttpParseInfo &info) {
-	int exit = 1;
-
+	int exit = 0;
+	char *p = info.status.offset + info.http_data.data;
+	int len = info.http_data.len;
 	do {
 		switch (info.status.step) {
-		case HEADER_STEP:
+		case HEADER_STEP: {
+			int offset = info.status.offset;
+			while (offset < len && p[offset] != ':') {
+				// info.http_data.meta.
+				++offset;
+			}
+			if (offset == len) {
+				// 未找到
+				exit = 1;
+			} else {
+				// 找到
+				// 判断是否是以下Header：Host、User-Agent、Cookie、Connection、Content-Length
+				switch (offset - info.status.offset) {
+				case 4:
+					if (memcmp(p+info.status.offset, "Host", 4) == 0) {
+					}
+				break;
+				case 6:
+				break;
+				case 9:
+				break;
+				case 10:
+				break;
+				case 14:
+				break;
+				}
+			}
+		}
 		break;
-		case HEADER_VALUE_STEP:
+		case HEADER_VALUE_STEP: {
+		}
 		break;
 		}
 	} while (!exit);
@@ -100,7 +129,7 @@ static int _http_headers_stage(HttpParseInfo &info) {
 }
 
 static int _http_body_stage(HttpParseInfo &info) {
-	int exit = 1;
+	int exit = 0;
 
 	// 如果是GET请求或者Content-Length为0,则不需要读取BODY
 
