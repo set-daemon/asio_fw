@@ -46,7 +46,8 @@ void NetListener::ev_read_proc(int lis_fd, short ev, void *arg) {
 
 	// 读取数据
 	int r_len = 0;
-	char *p = buf + sizeof(DataSrc) + sizeof(DataMsg);
+	char *data_addr = buf + sizeof(DataSrc) + sizeof(DataMsg);
+	char *p = data_addr;
 	do {
 		r_len = recv(lis_fd, p, to_read, MSG_DONTWAIT);
 		if (r_len <= 0) {
@@ -78,7 +79,7 @@ void NetListener::ev_read_proc(int lis_fd, short ev, void *arg) {
 		*(buf+total_read) = '\0';
 		data_blk->size = total_read;
 		data_que.add_data_block(data_blk);
-		//fprintf(stdout, "read [%d], %p %p [%s]\n", data_blk->size, data_blk, buf, buf);
+		fprintf(stdout, "read [%d], %p %p [%s]\n", data_blk->size, data_blk, buf, data_addr);
 		//fprintf(stdout, "111[");
 		for (int i = 0; i < total_read; ++i) {
 			//fprintf(stdout, "{%02x %c }", *(unsigned char*)(buf+i), (char)buf[i]);

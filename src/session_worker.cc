@@ -43,7 +43,7 @@ void* SessionWorker::worker_cb(void* arg) {
 			continue;
 		}
 
-		data = data + sizeof(DataSrc); // 真正数据起点
+		data = data + sizeof(DataSrc) + sizeof(DataMsg); // 真正数据起点
 		int data_size = data_block->size;
 	
 		parser::HttpParseInfo* parse_info = NULL;

@@ -45,7 +45,8 @@ struct HttpReqMeta {
 	HttpSegData		body;
 	// 额外的http头
 	AuxHeaderHash	header_hash;	// HTTP辅助头，用于查找该头的数据在headers_data中的位置
-	HttpSegData 	headers_data[MAX_HEADER_SIZE]; // HTTP头数据
+	HttpSegData 	headers[MAX_HEADER_SIZE]; 		// HTTP头数据
+	HttpSegData 	headers_data[MAX_HEADER_SIZE]; 	// HTTP头数据
 	int				header_num;
 };
 
