@@ -50,4 +50,6 @@ struct HttpReqMeta {
 	int				header_num;
 };
 
+void http_req_meta_print(HttpReqMeta& req_meta);
+
 #endif // __HTTP_META_H__

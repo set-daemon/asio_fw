@@ -3,8 +3,8 @@
 
 namespace parser {
 
-#define PRINT_FILELINE fprintf(stdout, "%s,%d\n", __FUNCTION__, __LINE__);
-//#define PRINT_FILELINE
+//#define PRINT_FILELINE fprintf(stdout, "%s,%d\n", __FUNCTION__, __LINE__);
+#define PRINT_FILELINE
 
 static int _http_cmdline_stage(HttpParseInfo &info) {
 	char *p = info.http_data.data + info.status.offset;
@@ -165,14 +165,14 @@ static int _http_headers_stage(HttpParseInfo &info) {
 				info.status.step = HEADER_VALUE_STEP;
 			}
 			info.status.offset = offset;
-			printf("offset=%d p[offset]=%c,p[offset+1]=%c\n", offset, p[offset],p[offset+1]);
+			//printf("offset=%d p[offset]=%c,p[offset+1]=%c\n", offset, p[offset],p[offset+1]);
 		}
 		break;
 		case HEADER_VALUE_STEP: {
 			int offset = info.status.offset;
 			while (offset+1 < len && p[offset] != '\r' && p[offset+1] != '\n') {
 				//PRINT_FILELINE;
-				printf(":offset = %d, len = %d, p[offset]=%c p[offset+1]=%c\n", offset, len, p[offset], p[offset+1]);
+				//printf(":offset = %d, len = %d, p[offset]=%c p[offset+1]=%c\n", offset, len, p[offset], p[offset+1]);
 				++offset;
 			}
 			if (offset+1 >= len) {
@@ -201,7 +201,7 @@ static int _http_headers_stage(HttpParseInfo &info) {
 				++info.http_data.meta.header_num;
 				PRINT_FILELINE;
 				// 检查是否到header头的最后
-				fprintf(stdout, "offset=%d p[offset]=%c p[offset+1]=%c\n", offset, p[offset], p[offset+1]);
+				//fprintf(stdout, "offset=%d p[offset]=%c p[offset+1]=%c\n", offset, p[offset], p[offset+1]);
 				if (offset+1 < len && p[offset]=='\r' && p[offset+1]=='\n') {
 					PRINT_FILELINE;
 					exit = 1;
@@ -247,6 +247,8 @@ int http_req_parse(HttpParseInfo &info) {
 		break;
 		}
 	} while (info.status.status != PARSE_COMPLETED);
+
+	http_req_meta_print(info.http_data.meta);
 
 	return 0;
 }
