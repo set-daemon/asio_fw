@@ -57,7 +57,7 @@ void* SessionWorker::worker_cb(void* arg) {
 		}
 
 		// 拷贝数据
-		memcpy((char*)parse_info->http_data.data, data, data_size);
+		memcpy((char*)parse_info->http_data.data+parse_info->http_data.len, data, data_size);
 		parse_info->http_data.len += data_size;
 		// 释放数据块
 		worker->data_que.lease_data_block();
@@ -65,6 +65,17 @@ void* SessionWorker::worker_cb(void* arg) {
 		// ** http解析
 		int ret = parser::http_req_parse(*parse_info);
 		if (0 != ret) {
+		}
+
+		fprintf(stdout, "status=%d\n", parse_info->status.status);
+		if (parse_info->status.status == parser::PARSE_COMPLETED) {
+			http_req_meta_print(parse_info->http_data.meta);
+			// TODO 生成事务数据并传递给事务处理层
+			fprintf(stdout, "ok....\n");
+
+			// 将剩余的数据挪至最前面
+			memcpy((char*)parse_info->http_data.data, parse_info->status.offset + parse_info->http_data.data, parse_info->http_data.len - parse_info->status.offset);
+			parse_info->http_data.len = 0;
 		}
 	}
 }
