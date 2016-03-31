@@ -46,7 +46,7 @@ public:
 
 		DataBlock* block = (DataBlock*)(p + rear * block_size);
 		//block->addr = (char*)block;
-		block->size = block_size - sizeof(DataBlock);
+		block->size = block_size - sizeof(DataBlock) - sizeof(DataMsg);
 
 		return block;
 	}

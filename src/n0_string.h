@@ -12,6 +12,7 @@
 
 namespace n0_string {
 	unsigned long int strtoul(const char* s, int len, int base);
+	void hex_print(const char* s, int len, const char* title, int line_width);
 }
 
 #endif // __N0_STRING_H__

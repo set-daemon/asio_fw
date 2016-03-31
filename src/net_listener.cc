@@ -1,5 +1,7 @@
 #include <errno.h>
 
+#include "n0_string.h"
+
 #include "net_listener.h"
 
 void NetListener::ev_accept_proc(int lis_fd, short ev, void *arg) {
@@ -28,7 +30,7 @@ void NetListener::ev_read_proc(int lis_fd, short ev, void *arg) {
 	XxbufQue& data_que = listener->data_que;
 	DataBlock *data_blk = data_que.get_free_block();	
 	if (NULL == data_blk) {
-		fprintf(stdout, "data_que is full\n");
+		//fprintf(stdout, "data_que is full\n");
 		return;
 	}
 	SockEvent* sock_evs = listener->find_sock_event(lis_fd);
@@ -60,14 +62,14 @@ void NetListener::ev_read_proc(int lis_fd, short ev, void *arg) {
 		p += r_len;
 	} while (r_len > 0 && to_read > 0);
 	if (r_len == -1 && (errno != EAGAIN)) {
-		fprintf(stdout, "r_len = -1 读异常\n");
+		//fprintf(stdout, "r_len = -1 读异常\n");
 		listener->del_sock_event(lis_fd);
 		// 向session层发出删除lis_fd的消息
 		msg->op = CHANNEL_LEASE;
 		data_que.add_data_block(data_blk);
 		return;
 	} else if (r_len == 0) {
-		fprintf(stdout, "r_len = 0断开\n");
+		//fprintf(stdout, "r_len = 0断开\n");
 		listener->del_sock_event(lis_fd);
 		msg->op = CHANNEL_LEASE;
 		data_que.add_data_block(data_blk);
@@ -76,16 +78,10 @@ void NetListener::ev_read_proc(int lis_fd, short ev, void *arg) {
 
 	if (total_read > 0) {
 		msg->op = UPLOAD_DATA;
-		*(buf+total_read) = '\0';
+		*(data_addr+total_read) = '\0';
 		data_blk->size = total_read;
 		data_que.add_data_block(data_blk);
-		fprintf(stdout, "read [%d], %p %p [%s]\n", data_blk->size, data_blk, buf, data_addr);
-		//fprintf(stdout, "111[");
-		for (int i = 0; i < total_read; ++i) {
-			//fprintf(stdout, "{%02x %c }", *(unsigned char*)(buf+i), (char)buf[i]);
-			//fprintf(stdout, "{%02x }", *(unsigned char*)(buf+i));
-		}
-		//fprintf(stdout, "]\n");
+		n0_string::hex_print(data_addr, data_blk->size, "net_listener 读数据", 32);
 	}
 
 	if (sock_evs->wr_ev == NULL) {

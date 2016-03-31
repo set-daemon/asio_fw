@@ -2,6 +2,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "n0_string.h"
+
 #include "http_meta.h"
 
 void http_req_meta_print(HttpReqMeta& req_meta) {
@@ -18,6 +20,9 @@ void http_req_meta_print(HttpReqMeta& req_meta) {
 		fprintf(stdout, "%d,%d[%.*s] = [%.*s]\n", req_meta.headers[i].length, req_meta.headers[i].offset, req_meta.headers[i].length, req_meta.headers[i].offset + req_meta.http_start,  req_meta.headers_data[i].length, req_meta.headers_data[i].offset + req_meta.http_start);
 	}
 
-	fprintf(stdout, "body = %d,%d[%.*s]\n", req_meta.body.length, req_meta.body.offset, req_meta.body.length, req_meta.http_start + req_meta.body.offset);
+	//fprintf(stdout, "body = %d,%d[%.*s]\n", req_meta.body.length, req_meta.body.offset, req_meta.body.length, req_meta.http_start + req_meta.body.offset);
+
+	n0_string::hex_print(req_meta.http_start + req_meta.body.offset, req_meta.body.length, "http_body", 16);
+
 	fprintf(stdout, "\n");
 }

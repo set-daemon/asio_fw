@@ -1,3 +1,4 @@
+#include "n0_string.h"
 #include "data_interface.h"
 
 #include "session_worker.h"
@@ -39,14 +40,15 @@ void* SessionWorker::worker_cb(void* arg) {
 				delete iter->second;
 				worker->socket_httpinfo.erase(iter);
 			}
-			fprintf(stdout, "获取消息：断开通知\n");
+			//fprintf(stdout, "获取消息：断开通知\n");
 			worker->data_que.lease_data_block();
 			continue;
 		}
 
 		data = data + sizeof(DataSrc) + sizeof(DataMsg); // 真正数据起点
 		int data_size = data_block->size;
-	
+		n0_string::hex_print(data, data_size, "接收的数据", 24);
+
 		parser::HttpParseInfo* parse_info = NULL;
 		SocketHttpParseInfoIter iter = worker->socket_httpinfo.find(data_src->fd);
 		if (iter == worker->socket_httpinfo.end()) {
@@ -68,11 +70,11 @@ void* SessionWorker::worker_cb(void* arg) {
 		if (0 != ret) {
 		}
 
-		fprintf(stdout, "status=%d\n", parse_info->status.status);
+		//fprintf(stdout, "status=%d\n", parse_info->status.status);
 		if (parse_info->status.status == parser::PARSE_COMPLETED) {
 			http_req_meta_print(parse_info->http_data.meta);
 			// TODO 生成事务数据并传递给事务处理层
-			fprintf(stdout, "ok....%d,%d\n", parse_info->http_data.len, parse_info->status.offset);
+			//fprintf(stdout, "ok....%d,%d\n", parse_info->http_data.len, parse_info->status.offset);
 
 			// 将剩余的数据挪至最前面
 			int unparsed_data_len = parse_info->http_data.len - parse_info->status.offset + 1;
