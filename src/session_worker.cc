@@ -61,8 +61,6 @@ void* SessionWorker::worker_cb(void* arg) {
 			//fprintf(stderr, "未找到socket历史数据\n");
 			parse_info = new parser::HttpParseInfo();
 			worker->socket_httpinfo[data_src->fd] = parse_info;
-		} else {
-			//fprintf(stderr, "找到socket历史数据 %d,%d,%d\n", parse_info->status.stage, parse_info->status.step, parse_info->status.offset);
 		}
 		if (parse_info == NULL) {
 			fprintf(stderr, "SESSION-WORKER 未能找到存储socket%d的缓存\n", data_src->fd);
@@ -99,6 +97,7 @@ void* SessionWorker::worker_cb(void* arg) {
 			if (unparsed_data_len > 0) {
 				memcpy((char*)parse_info->http_data.data, parse_info->status.offset + parse_info->http_data.data, unparsed_data_len);
 				parse_info->http_data.len = unparsed_data_len;
+				memset(&parse_info->http_data.meta, 0x00, sizeof(HttpReqMeta));
 			} else {
 				parse_info->http_data.len = 0;
 			}
