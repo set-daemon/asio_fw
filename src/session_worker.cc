@@ -51,7 +51,7 @@ void* SessionWorker::worker_cb(void* arg) {
 		data = data + sizeof(DataSrc) + sizeof(DataMsg); // 真正数据起点
 		int data_size = data_block->size;
 		//fprintf(stdout, "在SESSION中, %d 读取到%d字节，地址:%p,%p\n", data_src->fd, data_size, data, data_block);
-		//n0_string::hex_print(data, data_size, "接收的数据", 20);
+		n0_string::hex_print(data, data_size, "接收的数据", 20);
 
 		parser::HttpParseInfo* parse_info = NULL;
 		SocketHttpParseInfoIter iter = worker->socket_httpinfo.find(data_src->fd);
@@ -77,7 +77,7 @@ void* SessionWorker::worker_cb(void* arg) {
 			fprintf(stderr, "解析失败\n");
 		}
 
-		//fprintf(stdout, "status=%d\n", parse_info->status.status);
+		fprintf(stdout, "status=%d\n", parse_info->status.status);
 		if (parse_info->status.status == parser::PARSE_COMPLETED) {
 			http_req_meta_print(parse_info->http_data.meta);
 			// TODO 生成事务数据并传递给事务处理层
@@ -95,7 +95,8 @@ void* SessionWorker::worker_cb(void* arg) {
 			parse_info->status.offset = 0;
 			parse_info->status.stage = parser::CMD_LINE_STAGE;
 			parse_info->status.step = parser::METHOD_STEP;
-			parse_info->status.status = parser::PARSE_WAIT;
 		}
+		// 特别的：重置状态为PARSE_WAIT
+		parse_info->status.status = parser::PARSE_WAIT;
 	}
 }

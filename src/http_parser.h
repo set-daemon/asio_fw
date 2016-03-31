@@ -44,6 +44,7 @@ struct HttpParserStatus {
 	PARSE_STEP 		step;
 	PARSE_STATUS 	status;
 	int				offset;
+	HttpSegData *   cur_http;	
 };
 
 #define HTTP_DATA_SIZE 4096
@@ -61,6 +62,7 @@ public:
 		status.step = METHOD_STEP;
 		status.status = PARSE_WAIT;
 		status.offset = 0; // 已解析的位置
+		status.cur_http = NULL; // 当前的http头
 		// 初始化http数据部分
 		http_data.size = HTTP_DATA_SIZE;
 		http_data.len = 0;

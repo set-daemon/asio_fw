@@ -4,8 +4,8 @@
 
 namespace parser {
 
-//#define PRINT_FILELINE fprintf(stdout, "%s,%d\n", __FUNCTION__, __LINE__);
-#define PRINT_FILELINE
+#define PRINT_FILELINE fprintf(stdout, "%s,%d\n", __FUNCTION__, __LINE__);
+//#define PRINT_FILELINE
 
 static int _http_cmdline_stage(HttpParseInfo &info) {
 	char *p = info.http_data.data + info.status.offset;
@@ -101,7 +101,7 @@ static int _http_headers_stage(HttpParseInfo &info) {
 	do {
 		switch (info.status.step) {
 		case HEADER_STEP: {
-			cur_http = NULL;
+			info.status.cur_http = NULL;
 			int offset = info.status.offset;
 			while (offset < len && p[offset] != ':') {
 				PRINT_FILELINE;
@@ -118,7 +118,7 @@ static int _http_headers_stage(HttpParseInfo &info) {
 				switch (offset - info.status.offset) {
 				case 4:
 					if (strncasecmp(p+info.status.offset, "Host", 4) == 0) {
-						cur_http = &info.http_data.meta.host;
+						info.status.cur_http = &info.http_data.meta.host;
 					} else {
 						info.http_data.meta.headers[info.http_data.meta.header_num].offset = info.status.offset;
 						info.http_data.meta.headers[info.http_data.meta.header_num].length = offset - info.status.offset;
@@ -126,7 +126,7 @@ static int _http_headers_stage(HttpParseInfo &info) {
 				break;
 				case 6:
 					if (strncasecmp(p+info.status.offset, "Cookie", 6) == 0) {
-						cur_http = &info.http_data.meta.cookie;
+						info.status.cur_http = &info.http_data.meta.cookie;
 					} else {
 						info.http_data.meta.headers[info.http_data.meta.header_num].offset = info.status.offset;
 						info.http_data.meta.headers[info.http_data.meta.header_num].length = offset - info.status.offset;
@@ -134,9 +134,9 @@ static int _http_headers_stage(HttpParseInfo &info) {
 				break;
 				case 10:
 					if (strncasecmp(p+info.status.offset, "User-Agent", 10) == 0) {
-						cur_http = &info.http_data.meta.user_agent;
+						info.status.cur_http = &info.http_data.meta.user_agent;
 					} else if (memcmp(p+info.status.offset, "Connection", 10) == 0) {
-						cur_http = &info.http_data.meta.connection;
+						info.status.cur_http = &info.http_data.meta.connection;
 					} else {
 						info.http_data.meta.headers[info.http_data.meta.header_num].offset = info.status.offset;
 						info.http_data.meta.headers[info.http_data.meta.header_num].length = offset - info.status.offset;
@@ -144,7 +144,7 @@ static int _http_headers_stage(HttpParseInfo &info) {
 				break;
 				case 14:
 					if (strncasecmp(p+info.status.offset, "Content-Length", 14) == 0) {
-						cur_http = &info.http_data.meta.content_length;
+						info.status.cur_http = &info.http_data.meta.content_length;
 					} else {
 						info.http_data.meta.headers[info.http_data.meta.header_num].offset = info.status.offset;
 						info.http_data.meta.headers[info.http_data.meta.header_num].length = offset - info.status.offset;
@@ -153,7 +153,6 @@ static int _http_headers_stage(HttpParseInfo &info) {
 				default: {
 					info.http_data.meta.headers[info.http_data.meta.header_num].offset = info.status.offset;
 					info.http_data.meta.headers[info.http_data.meta.header_num].length = offset - info.status.offset;
-					//fprintf(stdout, "header [%.*s][%d,%d,%d]\n", info.http_data.meta.headers[info.http_data.meta.header_num].length, info.http_data.meta.headers[info.http_data.meta.header_num].offset + info.http_data.meta.http_start, info.http_data.meta.header_num, info.http_data.meta.headers[info.http_data.meta.header_num].offset, info.http_data.meta.headers[info.http_data.meta.header_num].length);
 				}
 				break;
 				}
@@ -191,10 +190,10 @@ static int _http_headers_stage(HttpParseInfo &info) {
 					--tmp_offset;
 				}
 				++tmp_offset;
-				if (cur_http != NULL) {
-					cur_http->offset = info.status.offset;
-					cur_http->length = tmp_offset - info.status.offset;
-					cur_http = NULL;
+				if (info.status.cur_http != NULL) {
+					info.status.cur_http->offset = info.status.offset;
+					info.status.cur_http->length = tmp_offset - info.status.offset;
+					info.status.cur_http = NULL;
 				} else {
 					info.http_data.meta.headers_data[info.http_data.meta.header_num].offset = info.status.offset;
 					info.http_data.meta.headers_data[info.http_data.meta.header_num].length = tmp_offset - info.status.offset;
@@ -212,7 +211,6 @@ static int _http_headers_stage(HttpParseInfo &info) {
 					info.status.offset = offset + 2;
 					info.status.stage = BODY_STAGE;
 					info.status.step = BODY_STEP;
-					//fprintf(stdout, "header [%.*s][%d,%d,%d]\n", info.http_data.meta.headers[info.http_data.meta.header_num-1].length, info.http_data.meta.headers[info.http_data.meta.header_num-1].offset + info.http_data.meta.http_start, info.http_data.meta.header_num-1, info.http_data.meta.headers[info.http_data.meta.header_num-1].offset, info.http_data.meta.headers[info.http_data.meta.header_num-1].length);
 				}
 			}
 		}
