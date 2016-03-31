@@ -48,8 +48,12 @@ void hex_print(const char* s, int len, const char* title, int line_width) {
 		if (line_end > len) {
 			line_end = len;
 		}
+		fprintf(stdout, "0x%08x ", i*line_width);
 		for (int j = line_start; j < line_end; ++j) {
 			fprintf(stdout, "%02x ", *(const unsigned char*)(s+j));
+		}
+		for (int j = 0; j < line_width -(line_end - line_start); ++j) {
+			fprintf(stdout, "   ");
 		}
 		fprintf(stdout, "       ");
 		for (int j = line_start; j < line_end; ++j) {

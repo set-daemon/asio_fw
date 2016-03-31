@@ -27,6 +27,9 @@ void* SessionWorker::worker_cb(void* arg) {
 		if (data_block == NULL) {
 			continue;
 		}
+
+		//n0_string::hex_print((char*)data_block, worker->data_que.cfg_block_size(), "整块数据", 20);
+
 		char* data = DATABLK_ADDR(data_block);
 		DataSrc * data_src = (DataSrc*)data; // 数据源
 		// TODO 数据变化通知：有新数据、通道断开
@@ -47,16 +50,19 @@ void* SessionWorker::worker_cb(void* arg) {
 
 		data = data + sizeof(DataSrc) + sizeof(DataMsg); // 真正数据起点
 		int data_size = data_block->size;
-		n0_string::hex_print(data, data_size, "接收的数据", 24);
+		//fprintf(stdout, "在SESSION中, %d 读取到%d字节，地址:%p,%p\n", data_src->fd, data_size, data, data_block);
+		//n0_string::hex_print(data, data_size, "接收的数据", 20);
 
 		parser::HttpParseInfo* parse_info = NULL;
 		SocketHttpParseInfoIter iter = worker->socket_httpinfo.find(data_src->fd);
 		if (iter == worker->socket_httpinfo.end()) {
 			// 未找到，创建新的
+			fprintf(stderr, "未找到socket历史数据\n");
 			parse_info = new parser::HttpParseInfo();
 			worker->socket_httpinfo[data_src->fd] = parse_info;
 		} else {
 			parse_info = iter->second;
+			fprintf(stderr, "找到socket历史数据 %d,%d,%d\n", parse_info->status.stage, parse_info->status.step, parse_info->status.offset);
 		}
 
 		// 拷贝数据
@@ -68,6 +74,7 @@ void* SessionWorker::worker_cb(void* arg) {
 		// ** http解析
 		int ret = parser::http_req_parse(*parse_info);
 		if (0 != ret) {
+			fprintf(stderr, "解析失败\n");
 		}
 
 		//fprintf(stdout, "status=%d\n", parse_info->status.status);
@@ -85,6 +92,7 @@ void* SessionWorker::worker_cb(void* arg) {
 				parse_info->http_data.len = 0;
 			}
 			// 重置状态
+			parse_info->status.offset = 0;
 			parse_info->status.stage = parser::CMD_LINE_STAGE;
 			parse_info->status.step = parser::METHOD_STEP;
 			parse_info->status.status = parser::PARSE_WAIT;

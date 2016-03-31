@@ -92,6 +92,10 @@ public:
 		return 0;
 	}
 
+	int cfg_block_size() {
+		return block_size;
+	}
+
 private:
 	int create() {
 		if (block_size <= 0 || elem_num <= 0) {

@@ -36,7 +36,7 @@ void NetListener::ev_read_proc(int lis_fd, short ev, void *arg) {
 	SockEvent* sock_evs = listener->find_sock_event(lis_fd);
 
 	char* buf = DATABLK_ADDR(data_blk);
-	int to_read = data_blk->size-1;
+	int to_read = data_blk->size - sizeof(DataSrc)-sizeof(DataMsg);
 	int total_read = 0;
 
 	// 20160326 特别的，设置数据来源信息
@@ -44,7 +44,7 @@ void NetListener::ev_read_proc(int lis_fd, short ev, void *arg) {
 	ds->fd = lis_fd;
 	memcpy(ds->ip, sock_evs->ip, sizeof(sock_evs->ip));
 	ds->port = sock_evs->port;
-	DataMsg *msg = (DataMsg*)(buf+sizeof(DataSrc));	
+	DataMsg *msg = (DataMsg*)(buf+sizeof(DataSrc));
 
 	// 读取数据
 	int r_len = 0;
@@ -58,7 +58,7 @@ void NetListener::ev_read_proc(int lis_fd, short ev, void *arg) {
 		}
 		//fprintf(stdout, "read...\n");
 		total_read += r_len;
-		to_read -= total_read;
+		to_read -= r_len;
 		p += r_len;
 	} while (r_len > 0 && to_read > 0);
 	if (r_len == -1 && (errno != EAGAIN)) {
@@ -78,10 +78,11 @@ void NetListener::ev_read_proc(int lis_fd, short ev, void *arg) {
 
 	if (total_read > 0) {
 		msg->op = UPLOAD_DATA;
-		*(data_addr+total_read) = '\0';
+		//*(data_addr+total_read) = '\0';
 		data_blk->size = total_read;
 		data_que.add_data_block(data_blk);
-		n0_string::hex_print(data_addr, data_blk->size, "net_listener 读数据", 32);
+		fprintf(stdout, "%d 读取到%d字节，地址:%p,%p\n", lis_fd, data_blk->size, data_addr, data_blk);
+		//n0_string::hex_print(data_addr, data_blk->size, "net_listener 读数据", 20);
 	}
 
 	if (sock_evs->wr_ev == NULL) {
