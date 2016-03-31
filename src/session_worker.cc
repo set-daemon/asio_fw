@@ -39,7 +39,8 @@ void* SessionWorker::worker_cb(void* arg) {
 				delete iter->second;
 				worker->socket_httpinfo.erase(iter);
 			}
-			fprintf(stdout, "断开通知\n");
+			fprintf(stdout, "获取消息：断开通知\n");
+			worker->data_que.lease_data_block();
 			continue;
 		}
 
@@ -71,11 +72,20 @@ void* SessionWorker::worker_cb(void* arg) {
 		if (parse_info->status.status == parser::PARSE_COMPLETED) {
 			http_req_meta_print(parse_info->http_data.meta);
 			// TODO 生成事务数据并传递给事务处理层
-			fprintf(stdout, "ok....\n");
+			fprintf(stdout, "ok....%d,%d\n", parse_info->http_data.len, parse_info->status.offset);
 
 			// 将剩余的数据挪至最前面
-			memcpy((char*)parse_info->http_data.data, parse_info->status.offset + parse_info->http_data.data, parse_info->http_data.len - parse_info->status.offset);
-			parse_info->http_data.len = 0;
+			int unparsed_data_len = parse_info->http_data.len - parse_info->status.offset + 1;
+			if (unparsed_data_len > 0) {
+				memcpy((char*)parse_info->http_data.data, parse_info->status.offset + parse_info->http_data.data, unparsed_data_len);
+				parse_info->http_data.len = unparsed_data_len;
+			} else {
+				parse_info->http_data.len = 0;
+			}
+			// 重置状态
+			parse_info->status.stage = parser::CMD_LINE_STAGE;
+			parse_info->status.step = parser::METHOD_STEP;
+			parse_info->status.status = parser::PARSE_WAIT;
 		}
 	}
 }

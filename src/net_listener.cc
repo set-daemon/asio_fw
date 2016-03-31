@@ -60,14 +60,14 @@ void NetListener::ev_read_proc(int lis_fd, short ev, void *arg) {
 		p += r_len;
 	} while (r_len > 0 && to_read > 0);
 	if (r_len == -1 && (errno != EAGAIN)) {
-		//fprintf(stdout, "读异常\n");
+		fprintf(stdout, "r_len = -1 读异常\n");
 		listener->del_sock_event(lis_fd);
 		// 向session层发出删除lis_fd的消息
 		msg->op = CHANNEL_LEASE;
 		data_que.add_data_block(data_blk);
 		return;
 	} else if (r_len == 0) {
-		//fprintf(stdout, "断开\n");
+		fprintf(stdout, "r_len = 0断开\n");
 		listener->del_sock_event(lis_fd);
 		msg->op = CHANNEL_LEASE;
 		data_que.add_data_block(data_blk);
@@ -109,7 +109,7 @@ void NetListener::ev_write_proc(int lis_fd, short ev, void *arg) {
 	// 获取写数据
 	int ret = write(lis_fd, buf, n);
 	if (ret == -1) {
-		//fprintf(stdout, "写失败\n");
+		fprintf(stdout, "写失败\n");
 		// 通知session层
 		XxbufQue& data_que = listener->data_que;
 		DataBlock *data_blk = data_que.get_free_block();	

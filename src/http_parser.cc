@@ -117,7 +117,7 @@ static int _http_headers_stage(HttpParseInfo &info) {
 				// 判断是否是以下Header：Host、User-Agent、Cookie、Connection、Content-Length
 				switch (offset - info.status.offset) {
 				case 4:
-					if (memcmp(p+info.status.offset, "Host", 4) == 0) {
+					if (strncasecmp(p+info.status.offset, "Host", 4) == 0) {
 						cur_http = &info.http_data.meta.host;
 					} else {
 						info.http_data.meta.headers[info.http_data.meta.header_num].offset = info.status.offset;
@@ -125,7 +125,7 @@ static int _http_headers_stage(HttpParseInfo &info) {
 					}
 				break;
 				case 6:
-					if (memcmp(p+info.status.offset, "Cookie", 6) == 0) {
+					if (strncasecmp(p+info.status.offset, "Cookie", 6) == 0) {
 						cur_http = &info.http_data.meta.cookie;
 					} else {
 						info.http_data.meta.headers[info.http_data.meta.header_num].offset = info.status.offset;
@@ -133,7 +133,7 @@ static int _http_headers_stage(HttpParseInfo &info) {
 					}
 				break;
 				case 10:
-					if (memcmp(p+info.status.offset, "User-Agent", 10) == 0) {
+					if (strncasecmp(p+info.status.offset, "User-Agent", 10) == 0) {
 						cur_http = &info.http_data.meta.user_agent;
 					} else if (memcmp(p+info.status.offset, "Connection", 10) == 0) {
 						cur_http = &info.http_data.meta.connection;
@@ -143,7 +143,7 @@ static int _http_headers_stage(HttpParseInfo &info) {
 					}
 				break;
 				case 14:
-					if (memcmp(p+info.status.offset, "Content-Length", 14) == 0) {
+					if (strncasecmp(p+info.status.offset, "Content-Length", 14) == 0) {
 						cur_http = &info.http_data.meta.content_length;
 					} else {
 						info.http_data.meta.headers[info.http_data.meta.header_num].offset = info.status.offset;
@@ -230,6 +230,7 @@ static int _http_body_stage(HttpParseInfo &info) {
 	char *content_length = info.http_data.meta.http_start + info.http_data.meta.content_length.offset;
 	int body_len = n0_string::strtoul(content_length, info.http_data.meta.content_length.length, 10);
 
+	fprintf(stdout, "%s body_len=%d,data_len=%d,offset=%d\n", __FUNCTION__, body_len, info.http_data.len, info.status.offset);
 	// 如果是GET请求或者Content-Length为0,则不需要读取BODY
 	char *method = info.http_data.meta.http_start + info.http_data.meta.method.offset;
 	if (strncasecmp(method, "POST", info.http_data.meta.method.length) != 0 || body_len <= 0) {
@@ -262,8 +263,7 @@ int http_req_parse(HttpParseInfo &info) {
 			_http_body_stage(info);
 		break;
 		}
-	} while (info.status.status != PARSE_COMPLETED && info.status.status == PARSING);
-
+	} while (info.status.status != PARSE_COMPLETED && info.status.status != PARSING);
 
 	return 0;
 }

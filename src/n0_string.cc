@@ -19,7 +19,7 @@ unsigned long int strtoul(const char* s, int len, int base) {
 			if (!(s[i] >= 0x30 && s[i] <= 0x39)) {
 				return v;
 			}
-			v = v*10 + (0x39 - s[i]);
+			v = v*10 + (s[i] - 0x30);
 			++i;
 		}
 	}

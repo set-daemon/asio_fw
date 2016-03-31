@@ -7,7 +7,7 @@
 #include "session_worker.h"
 
 int main(int argc, char *argv[]) {
-	XxbufQue que(2048, 102400);
+	XxbufQue que(1024, 102400);
 
 	if (!que.is_ok()) {
 		fprintf(stderr, "que创建有问题\n");
