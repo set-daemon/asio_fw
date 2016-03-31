@@ -35,10 +35,14 @@ void* SessionWorker::worker_cb(void* arg) {
 		// TODO 数据变化通知：有新数据、通道断开
 		DataMsg* msg = (DataMsg*)(data + sizeof(DataSrc));
 
+		parser::HttpParseInfo* parse_info = NULL;
+		SocketHttpParseInfoIter iter = worker->socket_httpinfo.find(data_src->fd);
+		if (iter != worker->socket_httpinfo.end()) {
+			parse_info = iter->second;
+		}
 		// TODO 如果是通道断开，则关闭
 		if (msg->op == CHANNEL_LEASE) {
 			// 清除
-			SocketHttpParseInfoIter iter = worker->socket_httpinfo.find(data_src->fd);
 			if (iter != worker->socket_httpinfo.end()) {
 				delete iter->second;
 				worker->socket_httpinfo.erase(iter);
@@ -51,21 +55,28 @@ void* SessionWorker::worker_cb(void* arg) {
 		data = data + sizeof(DataSrc) + sizeof(DataMsg); // 真正数据起点
 		int data_size = data_block->size;
 		//fprintf(stdout, "在SESSION中, %d 读取到%d字节，地址:%p,%p\n", data_src->fd, data_size, data, data_block);
-		n0_string::hex_print(data, data_size, "接收的数据", 20);
-
-		parser::HttpParseInfo* parse_info = NULL;
-		SocketHttpParseInfoIter iter = worker->socket_httpinfo.find(data_src->fd);
-		if (iter == worker->socket_httpinfo.end()) {
+		//n0_string::hex_print(data, data_size, "接收的数据", 20);
+		if (parse_info == NULL) {
 			// 未找到，创建新的
-			fprintf(stderr, "未找到socket历史数据\n");
+			//fprintf(stderr, "未找到socket历史数据\n");
 			parse_info = new parser::HttpParseInfo();
 			worker->socket_httpinfo[data_src->fd] = parse_info;
 		} else {
-			parse_info = iter->second;
-			fprintf(stderr, "找到socket历史数据 %d,%d,%d\n", parse_info->status.stage, parse_info->status.step, parse_info->status.offset);
+			//fprintf(stderr, "找到socket历史数据 %d,%d,%d\n", parse_info->status.stage, parse_info->status.step, parse_info->status.offset);
+		}
+		if (parse_info == NULL) {
+			fprintf(stderr, "SESSION-WORKER 未能找到存储socket%d的缓存\n", data_src->fd);
+			worker->data_que.lease_data_block();
+			continue;
 		}
 
 		// 拷贝数据
+		int cap = parse_info->http_data.size - parse_info->http_data.len;
+		if (cap < data_size) {
+			fprintf(stderr, "SESSION-WORKER 没有足够的空间%d\n", cap);
+			worker->data_que.lease_data_block();
+			continue;
+		}
 		memcpy((char*)parse_info->http_data.data+parse_info->http_data.len, data, data_size);
 		parse_info->http_data.len += data_size;
 		// 释放数据块
@@ -77,9 +88,9 @@ void* SessionWorker::worker_cb(void* arg) {
 			fprintf(stderr, "解析失败\n");
 		}
 
-		fprintf(stdout, "status=%d\n", parse_info->status.status);
+		//fprintf(stdout, "status=%d\n", parse_info->status.status);
 		if (parse_info->status.status == parser::PARSE_COMPLETED) {
-			http_req_meta_print(parse_info->http_data.meta);
+			//http_req_meta_print(parse_info->http_data.meta);
 			// TODO 生成事务数据并传递给事务处理层
 			//fprintf(stdout, "ok....%d,%d\n", parse_info->http_data.len, parse_info->status.offset);
 

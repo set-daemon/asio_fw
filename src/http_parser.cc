@@ -4,8 +4,8 @@
 
 namespace parser {
 
-#define PRINT_FILELINE fprintf(stdout, "%s,%d\n", __FUNCTION__, __LINE__);
-//#define PRINT_FILELINE
+//#define PRINT_FILELINE fprintf(stdout, "%s,%d\n", __FUNCTION__, __LINE__);
+#define PRINT_FILELINE
 
 static int _http_cmdline_stage(HttpParseInfo &info) {
 	char *p = info.http_data.data + info.status.offset;
@@ -49,7 +49,7 @@ static int _http_cmdline_stage(HttpParseInfo &info) {
 			} else {
 				// 找到
 				info.http_data.meta.uri.length = info.status.offset - info.http_data.meta.uri.offset;
-				printf("uri len = %d\n", info.http_data.meta.uri.length);
+				//printf("uri len = %d\n", info.http_data.meta.uri.length);
 				++info.status.offset; // 从空格挪至下一个有效数据
 				info.status.step = VERSION_STEP;
 				PRINT_FILELINE
@@ -228,7 +228,7 @@ static int _http_body_stage(HttpParseInfo &info) {
 	char *content_length = info.http_data.meta.http_start + info.http_data.meta.content_length.offset;
 	int body_len = n0_string::strtoul(content_length, info.http_data.meta.content_length.length, 10);
 
-	fprintf(stdout, "%s body_len=%d,data_len=%d,offset=%d\n", __FUNCTION__, body_len, info.http_data.len, info.status.offset);
+	//fprintf(stdout, "%s body_len=%d,data_len=%d,offset=%d\n", __FUNCTION__, body_len, info.http_data.len, info.status.offset);
 	// 如果是GET请求或者Content-Length为0,则不需要读取BODY
 	char *method = info.http_data.meta.http_start + info.http_data.meta.method.offset;
 	if (strncasecmp(method, "POST", info.http_data.meta.method.length) != 0 || body_len <= 0) {

@@ -81,7 +81,7 @@ void NetListener::ev_read_proc(int lis_fd, short ev, void *arg) {
 		//*(data_addr+total_read) = '\0';
 		data_blk->size = total_read;
 		data_que.add_data_block(data_blk);
-		fprintf(stdout, "%d 读取到%d字节，地址:%p,%p\n", lis_fd, data_blk->size, data_addr, data_blk);
+		//fprintf(stdout, "%d 读取到%d字节，地址:%p,%p\n", lis_fd, data_blk->size, data_addr, data_blk);
 		//n0_string::hex_print(data_addr, data_blk->size, "net_listener 读数据", 20);
 	}
 
