@@ -22,6 +22,7 @@ using namespace std;
 
 #include "net_addr.h"
 #include "xxbuf_que.h"
+#include "worker.h"
 
 class SockEvent {
 public:
@@ -46,9 +47,9 @@ public:
 	struct event* 	wr_ev;
 };
 
-class NetListener {
+class NetListener : public Worker {
 public:
-	NetListener(XxbufQue& buf_que): listen_fd(-1), ev_base(NULL),data_que(buf_que) {
+	NetListener(): listen_fd(-1), ev_base(NULL) {
 	}
 	~NetListener() {
 	}
@@ -99,12 +100,24 @@ private:
 		return &sock_events[fd];
 	}
 
+	XxbufQue* get_que() {
+		// 暂时只设置一个Session处理器
+		map<LayerType, map<WorkerId, XxbufQue*> >::iterator iter = out_channels.find(SESSION_LAYER);	
+		if (iter == out_channels.end()) {
+			return NULL;
+		}
+		map<WorkerId, XxbufQue*>::iterator v_iter = iter->second.begin();
+		if (iter->second.end() == v_iter) {
+			return NULL;
+		}
+		return v_iter->second;
+	}
+
 private:
-	map<int,SockEvent> 	sock_events;
+	map<int,SockEvent> 		sock_events;
 	int						listen_fd;
 	NetAddr					listen_addr;
 	struct event_base 		*ev_base;
-	XxbufQue&				data_que;
 };
 
 #endif // __NET_LISTENER_H__

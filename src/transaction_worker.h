@@ -8,14 +8,38 @@
 #ifndef __TRANSACTION_WORKER_H__
 #define __TRANSACTION_WORKER_H__
 
-class TransactionWorker {
+#include "data_interface.h"
+#include "xxbuf_que.h"
+
+#include "worker.h"
+
+class TransactionWorker : public Worker {
 public:
 	TransactionWorker() {
+		type = TRANSACTION_LAYER;
 	}
 	~TransactionWorker() {
 	}
 
+	XxbufQue* generate_channel(LayerType _type) {
+		XxbufQue* que = NULL;
+		switch (_type) {
+		case SESSION_LAYER:
+			que = new XxbufQue(8192, 20480);	
+		break;
+		case TRANSACTION_CONTROLLER_LAYER:
+			que = new XxbufQue(sizeof(TcTrans), 20480);
+		break;
+		default:
+			que = new XxbufQue(sizeof(TransApp), 10240);	
+		break;
+		}
+
+		return que;
+	}
+
 private:
+
 };
 
 #endif // __TRANSACTION_WORKER_H__

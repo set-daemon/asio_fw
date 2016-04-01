@@ -23,12 +23,13 @@ void* SessionWorker::worker_cb(void* arg) {
 
 	while (true) {
 		// 信号量等待，获取数据块
-		DataBlock* data_block = worker->data_que.wait();
+		XxbufQue* in_que = worker->get_inque(LISTENER_LAYER);
+		DataBlock* data_block = in_que->wait();
 		if (data_block == NULL) {
 			continue;
 		}
 
-		//n0_string::hex_print((char*)data_block, worker->data_que.cfg_block_size(), "整块数据", 20);
+		//n0_string::hex_print((char*)data_block, worker->in_que.cfg_block_size(), "整块数据", 20);
 
 		char* data = DATABLK_ADDR(data_block);
 		DataSrc * data_src = (DataSrc*)data; // 数据源
@@ -48,7 +49,7 @@ void* SessionWorker::worker_cb(void* arg) {
 				worker->socket_httpinfo.erase(iter);
 			}
 			//fprintf(stdout, "获取消息：断开通知\n");
-			worker->data_que.lease_data_block();
+			in_que->lease_data_block();
 			continue;
 		}
 
@@ -64,7 +65,7 @@ void* SessionWorker::worker_cb(void* arg) {
 		}
 		if (parse_info == NULL) {
 			fprintf(stderr, "SESSION-WORKER 未能找到存储socket%d的缓存\n", data_src->fd);
-			worker->data_que.lease_data_block();
+			in_que->lease_data_block();
 			continue;
 		}
 
@@ -72,13 +73,13 @@ void* SessionWorker::worker_cb(void* arg) {
 		int cap = parse_info->http_data.size - parse_info->http_data.len;
 		if (cap < data_size) {
 			fprintf(stderr, "SESSION-WORKER 没有足够的空间%d\n", cap);
-			worker->data_que.lease_data_block();
+			in_que->lease_data_block();
 			continue;
 		}
 		memcpy((char*)parse_info->http_data.data+parse_info->http_data.len, data, data_size);
 		parse_info->http_data.len += data_size;
 		// 释放数据块
-		worker->data_que.lease_data_block();
+		in_que->lease_data_block();
 
 		// ** http解析
 		int ret = parser::http_req_parse(*parse_info);

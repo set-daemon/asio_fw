@@ -27,7 +27,11 @@ void NetListener::ev_accept_proc(int lis_fd, short ev, void *arg) {
 void NetListener::ev_read_proc(int lis_fd, short ev, void *arg) {
 	NetListener* listener = (NetListener*)arg;
 
-	XxbufQue& data_que = listener->data_que;
+	XxbufQue* que = listener->get_que();
+	if (NULL == que) {
+		return;
+	}
+	XxbufQue& data_que = *que;
 	DataBlock *data_blk = data_que.get_free_block();	
 	if (NULL == data_blk) {
 		//fprintf(stdout, "data_que is full\n");
@@ -108,7 +112,11 @@ void NetListener::ev_write_proc(int lis_fd, short ev, void *arg) {
 	if (ret == -1) {
 		fprintf(stdout, "写失败\n");
 		// 通知session层
-		XxbufQue& data_que = listener->data_que;
+		XxbufQue* que = listener->get_que();
+		if (NULL == que) {
+			return;
+		}
+		XxbufQue& data_que = *que;
 		DataBlock *data_blk = data_que.get_free_block();	
 		if (NULL != data_blk) {
 			SockEvent* sock_evs = listener->find_sock_event(lis_fd);
