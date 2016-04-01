@@ -28,6 +28,8 @@ public:
 			que = new XxbufQue(sizeof(AppTc), 20480);
 		break;
 		}
+		add_in_channel(_type, que);
+
 		return que;
 	}
 

@@ -35,6 +35,8 @@ public:
 		break;
 		}
 
+		add_in_channel(_type, que);
+
 		return que;
 	}
 

@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
 	string cf = "";
 
 	// 从上到下初始化
-	vector<AppWorker*> app_workers(5);
+	vector<AppWorker*> app_workers;
 	for (int i = 0; i < 5; ++i) {
 		AppWorker* app_worker = new AppWorker();
 		app_worker->init(cf);
@@ -44,6 +44,8 @@ int main(int argc, char *argv[]) {
 		Worker::join(*t_worker, *app_workers[i]);
 		Worker::join(*app_workers[i], *tc_worker);
 	}
+
+	session_worker->run();
 
 	string addr = "tcp:127.0.0.1:18981";	
 	//string addr = "tcp:192.168.1.34:18981";	

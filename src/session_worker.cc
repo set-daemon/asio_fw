@@ -30,7 +30,6 @@ void* SessionWorker::worker_cb(void* arg) {
 		}
 
 		//n0_string::hex_print((char*)data_block, worker->in_que.cfg_block_size(), "整块数据", 20);
-
 		char* data = DATABLK_ADDR(data_block);
 		DataSrc * data_src = (DataSrc*)data; // 数据源
 		// TODO 数据变化通知：有新数据、通道断开

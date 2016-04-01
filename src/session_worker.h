@@ -35,11 +35,13 @@ public:
 
 	int run();
 
-	XxbufQue* generate_channel(LayerType _type) {
-		XxbufQue* que = new XxbufQue(1024, 1024);
+	virtual XxbufQue* generate_channel(LayerType _type) {
+		fprintf(stdout, "SessionWorker %s %d\n", __FUNCTION__, __LINE__);
+		XxbufQue* que = NULL;
 		switch (_type) {
 			case LISTENER_LAYER: {
 				que = new XxbufQue(4096, 40960);
+				add_in_channel(_type, que);
 			}
 			break;
 		}

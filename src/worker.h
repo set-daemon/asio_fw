@@ -49,6 +49,7 @@ public:
 
 	// 用于生成通道关系时使用
 	virtual XxbufQue* generate_channel(LayerType _type) {
+		fprintf(stdout, "Worker %s %d\n", __FUNCTION__, __LINE__);
 		XxbufQue* que = new XxbufQue(1024, 1024);
 		return que;
 	}
@@ -58,11 +59,7 @@ public:
 		// APP层通常工作在多线程模式，所以每次获取都需要新生成，可定制
 		map<LayerType,vector<XxbufQue*> >::iterator iter = in_channels.find(_type);
 		if (in_channels.end() == iter) {
-			vector<XxbufQue*> vec;
-			XxbufQue* que = new XxbufQue(1024,1024);
-			vec.push_back(que);
-			in_channels.insert(pair<LayerType,vector<XxbufQue*> >(_type, vec));
-			iter = in_channels.find(_type);
+			return NULL;
 		}
 
 		return iter->second[0];
@@ -93,6 +90,17 @@ protected:
 		} else {
 			iter->second[w_worker_id] = que;	
 		}
+	}
+
+	void add_in_channel(LayerType _type, XxbufQue* que) {
+		map<LayerType, vector<XxbufQue*> >::iterator iter = in_channels.find(_type);
+		if (iter != in_channels.end()) {
+			iter->second.push_back(que);
+			return;
+		}
+		vector<XxbufQue*> vec;
+		vec.push_back(que);
+		in_channels[_type] = vec;
 	}
 protected:
 	WorkerId 	worker_id;
