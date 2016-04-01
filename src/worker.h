@@ -33,6 +33,10 @@ public:
 		return 0;
 	}
 
+	virtual int run() {
+		return 0;
+	}
+
 	static void join(Worker& w1, Worker& w2) {
 		// 单向绑定：w2的输入为w1的输出
 		w1.set_out_channel(w2);
