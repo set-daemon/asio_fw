@@ -90,7 +90,32 @@ void* SessionWorker::worker_cb(void* arg) {
 		if (parse_info->status.status == parser::PARSE_COMPLETED) {
 			//http_req_meta_print(parse_info->http_data.meta);
 			// TODO 生成事务数据并传递给事务处理层
-			//fprintf(stdout, "ok....%d,%d\n", parse_info->http_data.len, parse_info->status.offset);
+			XxbufQue* t_que = worker->get_outque(TRANSACTION_LAYER);		
+			DataBlock* t_block = t_que->get_free_block();
+			if (NULL != t_block) {
+				int data_len = parse_info->status.offset;
+				char *data_addr = DATABLK_ADDR(t_block);
+				int size = t_block->size;
+				if (size > sizeof(SessTrans)) {
+					SessTrans* st = (SessTrans*)(data_addr);
+					// 拷贝
+					memcpy(&st->h.ds, data_src, sizeof(DataSrc));
+					st->h.dm.op = UPLOAD_DATA;
+					memcpy(&st->http_meta, &parse_info->http_data.meta, sizeof(HttpReqMeta));
+					data_addr = (char*)(data_addr + sizeof(SessTrans));
+					st->http_meta.http_start = data_addr;
+					st->httpdata_len = data_len;
+					// 拷贝原始数据
+					int remain_size = size - sizeof(SessTrans);
+					if (remain_size >= parse_info->status.offset) {
+						memcpy(data_addr, parse_info->http_data.data, data_len);
+						t_block->size = data_len + sizeof(SessTrans);
+						t_que->add_data_block(t_block);
+					} else {
+						fprintf(stderr, "无充足空间");
+					}
+				}
+			}
 
 			// 将剩余的数据挪至最前面
 			int unparsed_data_len = parse_info->http_data.len - parse_info->status.offset + 1;

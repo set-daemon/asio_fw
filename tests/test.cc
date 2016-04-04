@@ -43,12 +43,22 @@ int main(int argc, char *argv[]) {
 	for (int i = 0; i < app_workers.size(); ++i) {
 		Worker::join(*t_worker, *app_workers[i]);
 		Worker::join(*app_workers[i], *tc_worker);
+		// 启动APP层
+		app_workers[i]->run();
 	}
 
+	// 启动事务控制层
+	tc_worker->run();
+
+	// 启动事务层
+	t_worker->run();
+
+	// 启动Session层
 	session_worker->run();
 
 	string addr = "tcp:127.0.0.1:18981";	
 	//string addr = "tcp:192.168.1.34:18981";	
+	// 启动连接层
 	listener->roll_on(addr);
 
 	return 0;

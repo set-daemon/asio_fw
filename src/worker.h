@@ -51,6 +51,21 @@ public:
 		return iter->second[0];
 	}
 
+	virtual XxbufQue* get_outque(LayerType _type) {
+		map<LayerType,map<WorkerId,XxbufQue*> >::iterator iter = out_channels.find(_type);
+		if (iter == out_channels.end()) {
+			return NULL;
+		}
+
+		// 获取第一个WorkerID的通道
+		map<WorkerId,XxbufQue*>::iterator f_iter = iter->second.begin();
+		if (f_iter == iter->second.end()) {
+			return NULL;
+		}
+
+		return f_iter->second;
+	}
+
 	// 用于生成通道关系时使用
 	virtual XxbufQue* generate_channel(LayerType _type) {
 		fprintf(stdout, "Worker %s %d\n", __FUNCTION__, __LINE__);
