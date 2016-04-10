@@ -24,7 +24,7 @@ void* SessionWorker::worker_cb(void* arg) {
 	while (true) {
 		// 信号量等待，获取数据块
 		XxbufQue* in_que = worker->get_inque(LISTENER_LAYER);
-		DataBlock* data_block = in_que->wait(10000000);
+		DataBlock* data_block = in_que->wait(1000000000);
 		if (data_block == NULL) {
 			fprintf(stdout, "SessionWorker no msg\n");
 			continue;

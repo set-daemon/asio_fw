@@ -59,7 +59,7 @@ public:
 		XxbufQue* que = NULL;
 		switch (_type) {
 		case SESSION_LAYER:
-			que = new XxbufQue(8192, 20480);
+			que = new XxbufQue(8192, 66960);
 		break;
 		case TRANSACTION_CONTROLLER_LAYER:
 			que = new XxbufQue(sizeof(TcTrans), 20480);

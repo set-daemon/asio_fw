@@ -40,7 +40,7 @@ public:
 		XxbufQue* que = NULL;
 		switch (_type) {
 			case LISTENER_LAYER: {
-				que = new XxbufQue(4096, 40960);
+				que = new XxbufQue(4096, 60960);
 				add_in_channel(_type, que);
 			}
 			break;

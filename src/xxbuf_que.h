@@ -15,6 +15,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <time.h>
 
 #include <semaphore.h>
 
@@ -80,14 +81,18 @@ public:
 		return block;
 	}
 
-	DataBlock* wait(int nsec) {
+	DataBlock* wait(long long nsec) {
 		if (0 == nsec) { 
 		} else if (nsec < 0) {
 			if (0 != sem_wait(&notify_sem)) {
 				return NULL;
 			}
 		} else {
-			struct timespec tw = {0, nsec};
+			struct timespec tw;
+			//tw.tv_sec = 0;
+			clock_gettime(CLOCK_REALTIME, &tw);
+			tw.tv_nsec += 100000000;
+			tw.tv_sec += 1;
 			if (0 != sem_timedwait(&notify_sem, &tw)) {
 				return NULL;
 			}

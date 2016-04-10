@@ -26,14 +26,14 @@ void* TransactionWorker::worker_cb(void* arg) {
 		if (NULL == in_que_sess) {
 			return NULL;
 		}
-		DataBlock* block = in_que_sess->wait(10000000);
+		DataBlock* block = in_que_sess->wait(1000000000);
 		if (NULL != block) {
-#if 1
 			// 生成事务，并将数据拷贝
 			char* d = DATABLK_ADDR(block);
 			SessTrans* st = (SessTrans*)(d);
 			DataSrc* ds = &st->h.ds;
 			DataMsg* dm = &st->h.dm;
+#if 1
 			// 事务ID生成算法：以socket、时间戳作为元数据，MD5的结果即为事务ID
 			int d_len = sizeof(int)+sizeof(struct timeval);
 			char key_d[sizeof(int)+sizeof(struct timeval)];
@@ -105,12 +105,22 @@ void* TransactionWorker::worker_cb(void* arg) {
 				} else {
 					fprintf(stdout, "事务返回成功 %d,%s\n", errno, strerror(errno));
 				}
+				worker->pool.giveback(t_block);
 			}
 			// TODO 将事务发送给TC
 
 			// TODO 将事务发送给APP
 #else
+			char buf[1024];	
+			static const char *rsp_body = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"></meta><title>测试</title></head><body></body></html>";
+			static const char *test_rsp = "HTTP/1.1 200 OK\r\nConnection: keep-alive\r\nContent-Length: %d\r\n\r\n%s";
 			in_que_sess->lease_data_block();
+			int n = sprintf(buf, test_rsp, strlen(rsp_body), rsp_body);
+			buf[n] = '\0';
+			int w_ret = write(ds->fd, (char*)buf, n);
+			if (w_ret < 0) {
+				fprintf(stdout, "事务返回失败 %d,%s\n", errno, strerror(errno));
+			}
 #endif
 		} else {
 			fprintf(stdout, "TransactionWorker no data\n");
