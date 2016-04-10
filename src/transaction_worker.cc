@@ -18,7 +18,7 @@ int TransactionWorker::run() {
 
 void* TransactionWorker::worker_cb(void* arg) {
 	TransactionWorker* worker = (TransactionWorker*)arg;
-	fprintf(stdout, "%s %d\n", __FUNCTION__, __LINE__);
+	//fprintf(stdout, "%s %d\n", __FUNCTION__, __LINE__);
 
 	while (true) {
 		// 获取来自SESSION的数据
@@ -26,8 +26,9 @@ void* TransactionWorker::worker_cb(void* arg) {
 		if (NULL == in_que_sess) {
 			return NULL;
 		}
-		DataBlock* block = in_que_sess->get_data_block();
+		DataBlock* block = in_que_sess->wait(10000000);
 		if (NULL != block) {
+#if 1
 			// 生成事务，并将数据拷贝
 			char* d = DATABLK_ADDR(block);
 			SessTrans* st = (SessTrans*)(d);
@@ -40,7 +41,7 @@ void* TransactionWorker::worker_cb(void* arg) {
 			gettimeofday((struct timeval*)(key_d+sizeof(int)), NULL);
 			TransId id;
 			MD5((const unsigned char*)key_d, d_len, (unsigned char*)id);
-			fprintf(stdout, "%s %d\n", __FUNCTION__, __LINE__);
+			//fprintf(stdout, "Transaction Worker %s %d\n", __FUNCTION__, __LINE__);
 			const char* hex_chars = "0123456789ABCDEF";
 			// 将数据串转为十六进制字符数据
 			for (int i = 15; i >= 0; --i) {
@@ -51,18 +52,18 @@ void* TransactionWorker::worker_cb(void* arg) {
 				id[pos_h] = *(hex_chars+hc);
 				id[pos_l] = *(hex_chars+lc);
 			}
-			
-			fprintf(stdout, "%s %d\n", __FUNCTION__, __LINE__);
+
+			//fprintf(stdout, "TransactionWorker %s %d\n", __FUNCTION__, __LINE__);
 			DataBlock* t_block = worker->pool.get();	
-			fprintf(stdout, "%s %d\n", __FUNCTION__, __LINE__);
+			//fprintf(stdout, "%s %d\n", __FUNCTION__, __LINE__);
 			if (NULL == t_block) {
 				in_que_sess->lease_data_block();
-				fprintf(stdout, "%s %d\n", __FUNCTION__, __LINE__);
+				//fprintf(stdout, "TransactionWorker %s %d\n", __FUNCTION__, __LINE__);
 				continue;
 			}
-			fprintf(stdout, "%s %d\n", __FUNCTION__, __LINE__);
+			//fprintf(stdout, "TransactionWorker %s %d\n", __FUNCTION__, __LINE__);
 			worker->trans.insert(pair<string,DataBlock*>(string(id,sizeof(id)),t_block));
-			fprintf(stdout, "%s %d\n", __FUNCTION__, __LINE__);
+			//fprintf(stdout, "TransactionWorker %s %d\n", __FUNCTION__, __LINE__);
 			char* buf_addr = DATABLK_ADDR(t_block);
 			int buf_size = t_block->size;
 			DataSrc *t_ds = (DataSrc*)buf_addr;
@@ -74,16 +75,48 @@ void* TransactionWorker::worker_cb(void* arg) {
 			char* http_data = buf_addr+sizeof(DataSrc)+sizeof(HttpReqMeta) + sizeof(int);
 			memcpy(http_data, d+sizeof(SessTrans), st->httpdata_len);
 			http_reqmeta->http_start = http_data;
+			int ret = 0;
+			BufInfo* rsp_buf = NULL;
+			BufInfo* app_buf = NULL;
 			if (worker->pre_processor.f) {
 				pre_processor_fun f = worker->pre_processor.f;
-				BufInfo* rsp_buf = (BufInfo*)(http_data+st->httpdata_len);
-				rsp_buf->addr = (unsigned long long)(char*)(rsp_buf+sizeof(BufInfo));
+				rsp_buf = (BufInfo*)(http_data+st->httpdata_len);
+				rsp_buf->addr = (unsigned long long)((char*)(rsp_buf)+sizeof(BufInfo));
 				rsp_buf->size = 1024;
-				f(&st->http_meta, http_data, *httpdata_len, *rsp_buf, worker->pre_processor.ctx);
+				ret = f(&st->http_meta, http_data, *httpdata_len, *rsp_buf, worker->pre_processor.ctx);
+				BufInfo* app_buf = (BufInfo*)((char*)rsp_buf + sizeof(BufInfo) + rsp_buf->size);	
+				app_buf->addr = (unsigned long long)((char*)app_buf + sizeof(BufInfo));
+				app_buf->size = buf_size - sizeof(DataSrc) - sizeof(HttpReqMeta) - sizeof(int) - *httpdata_len - sizeof(BufInfo) - rsp_buf->size - sizeof(BufInfo);
+			} else {
+				app_buf = (BufInfo*)(http_data+st->httpdata_len);
+				app_buf->addr = (unsigned long long)((char*)(rsp_buf)+sizeof(BufInfo));
+				app_buf->size = buf_size - sizeof(DataSrc) - sizeof(HttpReqMeta) - sizeof(int) - *httpdata_len - sizeof(BufInfo);
 			}
 			in_que_sess->lease_data_block();
+			if (ret == -1) {
+				// 如果预处理器返回-1,则立即返回数据，并删除该事务
+				map<string,DataBlock*>::iterator t_find_iter = worker->trans.find(string(id));
+				if (t_find_iter != worker->trans.end()) {	
+					worker->trans.erase(t_find_iter);
+				}
+				int w_ret = write(ds->fd, (char*)rsp_buf->addr, rsp_buf->size);
+				if (w_ret < 0) {
+					fprintf(stdout, "事务返回失败 %d,%s\n", errno, strerror(errno));
+				} else {
+					fprintf(stdout, "事务返回成功 %d,%s\n", errno, strerror(errno));
+				}
+			}
+			// TODO 将事务发送给TC
+
+			// TODO 将事务发送给APP
+#else
+			in_que_sess->lease_data_block();
+#endif
+		} else {
+			fprintf(stdout, "TransactionWorker no data\n");
 		}
 
+#if 0
 		// 获取来自TC的数据
 		XxbufQue* in_que_tc = worker->get_inque(TRANSACTION_CONTROLLER_LAYER);
 		if (NULL == in_que_tc) {
@@ -94,7 +127,8 @@ void* TransactionWorker::worker_cb(void* arg) {
 			// 处理数据
 			in_que_tc->lease_data_block();
 		}
-		usleep(1);
+#endif
+		//usleep(1);
 	}
 
 	return arg;

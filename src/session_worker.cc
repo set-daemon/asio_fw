@@ -24,8 +24,9 @@ void* SessionWorker::worker_cb(void* arg) {
 	while (true) {
 		// 信号量等待，获取数据块
 		XxbufQue* in_que = worker->get_inque(LISTENER_LAYER);
-		DataBlock* data_block = in_que->wait();
+		DataBlock* data_block = in_que->wait(10000000);
 		if (data_block == NULL) {
+			fprintf(stdout, "SessionWorker no msg\n");
 			continue;
 		}
 
@@ -86,7 +87,7 @@ void* SessionWorker::worker_cb(void* arg) {
 			fprintf(stderr, "解析失败\n");
 		}
 
-		//fprintf(stdout, "status=%d\n", parse_info->status.status);
+		fprintf(stdout, "status=%d\n", parse_info->status.status);
 		if (parse_info->status.status == parser::PARSE_COMPLETED) {
 			//http_req_meta_print(parse_info->http_data.meta);
 			// TODO 生成事务数据并传递给事务处理层
@@ -110,7 +111,14 @@ void* SessionWorker::worker_cb(void* arg) {
 					if (remain_size >= parse_info->status.offset) {
 						memcpy(data_addr, parse_info->http_data.data, data_len);
 						t_block->size = data_len + sizeof(SessTrans);
-						t_que->add_data_block(t_block);
+#if 1
+						int ret = t_que->add_data_block(t_block);
+						if (ret != 0) {
+							fprintf(stderr, "发送 Transaction失败");
+						} else {
+							fprintf(stderr, "发送 Transaction成功");
+						}
+#endif
 					} else {
 						fprintf(stderr, "无充足空间");
 					}

@@ -29,12 +29,13 @@ void NetListener::ev_read_proc(int lis_fd, short ev, void *arg) {
 
 	XxbufQue* que = listener->get_que();
 	if (NULL == que) {
+		fprintf(stderr, "NetListener 无消息队列\n");
 		return;
 	}
 	XxbufQue& data_que = *que;
 	DataBlock *data_blk = data_que.get_free_block();	
 	if (NULL == data_blk) {
-		//fprintf(stdout, "data_que is full\n");
+		fprintf(stdout, "data_que is full\n");
 		return;
 	}
 	SockEvent* sock_evs = listener->find_sock_event(lis_fd);
@@ -55,6 +56,7 @@ void NetListener::ev_read_proc(int lis_fd, short ev, void *arg) {
 	char *data_addr = buf + sizeof(DataSrc) + sizeof(DataMsg);
 	char *p = data_addr;
 	do {
+		fprintf(stdout, "before read\n");
 		r_len = recv(lis_fd, p, to_read, MSG_DONTWAIT);
 		if (r_len <= 0) {
 			//fprintf(stdout, "{EAGAIN=%d,EBADF=%d,EINTR=%d}errno = %d\n, errstr = %s\n", EAGAIN,EBADF,EINTR,errno, strerror(errno));
@@ -65,18 +67,29 @@ void NetListener::ev_read_proc(int lis_fd, short ev, void *arg) {
 		to_read -= r_len;
 		p += r_len;
 	} while (r_len > 0 && to_read > 0);
+	fprintf(stdout, "after read %d,%d\n", r_len, total_read);
 	if (r_len == -1 && (errno != EAGAIN)) {
 		//fprintf(stdout, "r_len = -1 读异常\n");
 		listener->del_sock_event(lis_fd);
 		// 向session层发出删除lis_fd的消息
 		msg->op = CHANNEL_LEASE;
-		data_que.add_data_block(data_blk);
+#if 1
+		int ret = data_que.add_data_block(data_blk);
+		if (ret == -1) {
+			fprintf(stderr, "netListener 无数据块\n");
+		}
+#endif
 		return;
 	} else if (r_len == 0) {
 		//fprintf(stdout, "r_len = 0断开\n");
 		listener->del_sock_event(lis_fd);
 		msg->op = CHANNEL_LEASE;
-		data_que.add_data_block(data_blk);
+#if 1
+		int ret = data_que.add_data_block(data_blk);
+		if (ret == -1) {
+			fprintf(stderr, "netListener 无数据块\n");
+		}
+#endif
 		return;
 	}
 
@@ -84,16 +97,25 @@ void NetListener::ev_read_proc(int lis_fd, short ev, void *arg) {
 		msg->op = UPLOAD_DATA;
 		//*(data_addr+total_read) = '\0';
 		data_blk->size = total_read;
-		data_que.add_data_block(data_blk);
+#if 1
+		int ret = data_que.add_data_block(data_blk);
+		if (ret == -1) {
+			fprintf(stdout, "netListener 无数据块\n");
+		} else {
+			//fprintf(stdout, "send to session OK\n");
+		}
+#endif
 		//fprintf(stdout, "%d 读取到%d字节，地址:%p,%p\n", lis_fd, data_blk->size, data_addr, data_blk);
 		//n0_string::hex_print(data_addr, data_blk->size, "net_listener 读数据", 20);
 	}
 
+#if 0
 	if (sock_evs->wr_ev == NULL) {
 		sock_evs->wr_ev = event_new(listener->ev_base, lis_fd, EV_WRITE|EV_ET, NetListener::ev_write_proc, arg);
 		//fprintf(stdout, "设置写事件\n");
 	}
 	event_add(sock_evs->wr_ev, NULL);
+#endif
 	//event_base_set(listener->ev_base, &session->ev);
 }
 

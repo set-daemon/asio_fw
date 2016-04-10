@@ -12,6 +12,18 @@ using namespace std;
 #include "transaction_tc_worker.h"
 #include "app_worker.h"
 
+static const char *rsp_body = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"></meta><title>测试</title></head><body></body></html>";
+static const char *test_rsp = "HTTP/1.1 200 OK\r\nConnection: keep-alive\r\nContent-Length: %d\r\n\r\n%s";
+
+int transaction_preprocessor(HttpReqMeta* http_meta, char* http_data, int http_data_len, BufInfo& write_buf, void *ctx) {
+	char *buf = (char*)write_buf.addr;
+	int n = sprintf(buf, test_rsp, strlen(rsp_body), rsp_body);
+	buf[n] = '\0';
+	write_buf.size = n;
+
+	return -1;
+}
+
 int main(int argc, char *argv[]) {
 	string cf = "";
 
@@ -25,6 +37,7 @@ int main(int argc, char *argv[]) {
 
 	TransactionWorker* t_worker = new TransactionWorker();
 	t_worker->init(cf);
+	t_worker->set_preprocessor(transaction_preprocessor, NULL);
 
 	TransactionTcWorker* tc_worker = new TransactionTcWorker();
 	tc_worker->init(cf);

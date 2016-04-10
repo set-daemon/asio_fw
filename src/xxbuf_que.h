@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <errno.h>
 
 #include <semaphore.h>
 
@@ -60,7 +61,11 @@ public:
 		rear = (rear + 1) % elem_num;
 
 		// 信号量
-		sem_post(&notify_sem);
+		int sem_ret = sem_post(&notify_sem);
+		if (-1 == sem_ret) {
+			fprintf(stderr, "sem_post %d, %s\n", errno, strerror(errno));
+			return -2;
+		}
 
 		return 0;
 	}
@@ -75,9 +80,17 @@ public:
 		return block;
 	}
 
-	DataBlock* wait() {
-		if (0 != sem_wait(&notify_sem)) {
-			return NULL;
+	DataBlock* wait(int nsec) {
+		if (0 == nsec) { 
+		} else if (nsec < 0) {
+			if (0 != sem_wait(&notify_sem)) {
+				return NULL;
+			}
+		} else {
+			struct timespec tw = {0, nsec};
+			if (0 != sem_timedwait(&notify_sem, &tw)) {
+				return NULL;
+			}
 		}
 
 		return get_data_block();
